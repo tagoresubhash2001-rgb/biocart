@@ -1,0 +1,264 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==========================================
+    // 1. Global Safety Net (Default Deny All)
+    // ==========================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ==========================================
+    // Primitive Global Security Helpers
+    // ==========================================
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Bootstrapped Runtime Admin check (Staff Software Engineer Grade)
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'tagoresubhash2001@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // ==========================================
+    // Standalone Validation Blueprints
+    // ==========================================
+    function isValidUser(data) {
+      return data.uid is string && 
+             data.email is string && 
+             data.name is string && 
+             data.role in ['customer', 'guest', 'admin', 'super_admin'] &&
+             data.status in ['active', 'suspended'];
+    }
+
+    function isValidProduct(data) {
+      return data.name is string && 
+             data.name.size() <= 200 && 
+             data.category is string && 
+             data.price is number && 
+             data.mrp is number && 
+             data.sku is string && 
+             data.stockStatus in ['In Stock', 'Low Stock', 'Out of Stock'] && 
+             data.inStock is bool;
+    }
+
+    function isValidOrder(data) {
+      return data.userId is string && 
+             data.orderNumber is string && 
+             data.paymentMethod in ['cod', 'razorpay', 'stripe', 'card'] && 
+             data.paymentStatus in ['pending', 'completed', 'failed', 'refunded'] && 
+             data.subtotal is number && 
+             data.totalAmount is number;
+    }
+
+    function isValidCart(data) {
+      return data.userId is string && data.items is list;
+    }
+
+    function isValidWishlist(data) {
+      return data.userId is string && data.productIds is list;
+    }
+
+    function isValidAddress(data) {
+      return data.userId is string && 
+             data.addressType in ['shipping', 'billing'] && 
+             data.name is string && 
+             data.street is string && 
+             data.city is string && 
+             data.state is string && 
+             data.postalCode is string && 
+             data.phone is string;
+    }
+
+    function isValidReview(data) {
+      return data.productId is string && 
+             data.userId is string && 
+             data.rating is number && 
+             data.comment is string && 
+             data.isApproved is bool;
+    }
+
+    function isValidBlog(data) {
+      return data.title is string && data.slug is string && data.content is string;
+    }
+
+    function isValidCoupon(data) {
+      return data.code is string && 
+             data.discountType in ['percentage', 'fixed'] && 
+             data.discountValue is number && 
+             data.usageLimit is number && 
+             data.usedCount is number;
+    }
+
+    // ==========================================
+    // Collection Path Mapping Blocks
+    // ==========================================
+
+    // 1. Users Profile Collection
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create: if isEmailVerified() && isOwner(userId) && isValidUser(incoming());
+      allow update: if isEmailVerified() && isOwner(userId) && isValidUser(incoming()) && 
+                    incoming().role == existing().role; // Forbid self role-escalation
+      allow delete: if isAdmin();
+    }
+
+    // 2. Products Catalog
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 3. Product Categories
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 4. Stock Inventory Levels
+    match /inventory/{inventoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 5. Product Variations
+    match /product_variants/{variantId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 6. Purchase Orders
+    match /orders/{orderId} {
+      allow get: if isSignedIn() && (isOwner(existing().userId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isEmailVerified() && isOwner(incoming().userId) && isValidOrder(incoming());
+      allow update: if isEmailVerified() && (
+        isAdmin() || 
+        (isOwner(existing().userId) && 
+         incoming().diff(existing()).affectedKeys().hasOnly(['status', 'notes']) && 
+         existing().status in ['placed', 'processing']) // Terminal state locking
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 7. Order Line Items
+    match /order_items/{itemId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || (isSignedIn() && isEmailVerified());
+    }
+
+    // 8. Customer Shopping Carts
+    match /shopping_carts/{cartId} {
+      allow read: if isSignedIn() && (isOwner(cartId) || isAdmin());
+      allow write: if isEmailVerified() && isOwner(cartId) && isValidCart(incoming());
+    }
+
+    // 9. Customer Wishlists
+    match /wishlists/{wishlistId} {
+      allow read: if isSignedIn() && (isOwner(wishlistId) || isAdmin());
+      allow write: if isEmailVerified() && isOwner(wishlistId) && isValidWishlist(incoming());
+    }
+
+    // 10. Saved Addresses
+    match /addresses/{addressId} {
+      allow read: if isSignedIn() && (isOwner(resource.data.userId) || isAdmin());
+      allow create: if isEmailVerified() && isOwner(incoming().userId) && isValidAddress(incoming());
+      allow update: if isEmailVerified() && isOwner(existing().userId) && isValidAddress(incoming());
+      allow delete: if isSignedIn() && (isOwner(existing().userId) || isAdmin());
+    }
+
+    // 11. Product Reviews
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isEmailVerified() && isOwner(incoming().userId) && isValidReview(incoming()) && incoming().isApproved == false;
+      allow update, delete: if isAdmin();
+    }
+
+    // 12. Corporate Blog Posts
+    match /blogs/{blogId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidBlog(incoming());
+    }
+
+    // 13. Promo Billboard Banners
+    match /banners/{bannerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 14. Promotional Discount Coupons
+    match /coupons/{couponId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() && isValidCoupon(incoming());
+    }
+
+    // 15. Merchant Dealer Applications
+    match /dealer_applications/{appId} {
+      allow get: if isSignedIn() && (isOwner(resource.data.userId) || isAdmin());
+      allow create: if isEmailVerified() && isOwner(incoming().userId);
+      allow update, delete, list: if isAdmin();
+    }
+
+    // 16. Merchant Distributor Applications
+    match /distributor_applications/{appId} {
+      allow get: if isSignedIn() && (isOwner(resource.data.userId) || isAdmin());
+      allow create: if isEmailVerified() && isOwner(incoming().userId);
+      allow update, delete, list: if isAdmin();
+    }
+
+    // 17. User Alerts & Notifications
+    match /notifications/{notifId} {
+      allow read: if isSignedIn() && (isOwner(resource.data.userId) || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // 18. Global Settings Configuration
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 19. Homepage Layout Contents
+    match /homepage_contents/{sectionId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 20. Customer Support Contact Messages
+    match /contact_messages/{msgId} {
+      allow create: if true; // Public contact form
+      allow read, update, delete: if isAdmin();
+    }
+
+    // 21. Platform Usage Analytics Logs
+    match /analytics/{logId} {
+      allow create: if true; // Public analytics collector
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}

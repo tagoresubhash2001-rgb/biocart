@@ -1,0 +1,385 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with role-based access status",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["super_admin", "admin", "manager", "customer", "guest"] },
+        "phoneNumber": { "type": "string" },
+        "location": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "suspended"] }
+      },
+      "required": ["uid", "email", "name", "role", "status"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "E-commerce product entity",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "mrp": { "type": "number" },
+        "sku": { "type": "string" },
+        "rating": { "type": "number" },
+        "image": { "type": "string" },
+        "stockStatus": { "type": "string", "enum": ["In Stock", "Low Stock", "Out of Stock"] },
+        "inStock": { "type": "boolean" },
+        "version": { "type": "number" }
+      },
+      "required": ["id", "name", "category", "price", "mrp", "sku", "stockStatus", "inStock", "version"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Product categories hierarchy",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["id", "name", "slug"]
+    },
+    "Inventory": {
+      "title": "Inventory",
+      "description": "Stock inventory levels per product",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "sku": { "type": "string" },
+        "quantity": { "type": "integer" },
+        "reservedQuantity": { "type": "integer" },
+        "availableQuantity": { "type": "integer" },
+        "lowStockThreshold": { "type": "integer" }
+      },
+      "required": ["productId", "sku", "quantity", "reservedQuantity", "availableQuantity"]
+    },
+    "ProductVariant": {
+      "title": "ProductVariant",
+      "description": "Weight or style variants of a product",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "sku": { "type": "string" },
+        "price": { "type": "number" },
+        "mrp": { "type": "number" },
+        "weight": { "type": "string" },
+        "stockStatus": { "type": "string" }
+      },
+      "required": ["productId", "sku", "price", "mrp", "weight", "stockStatus"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Purchase order records",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "orderNumber": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "paymentStatus": { "type": "string" },
+        "shippingAddressId": { "type": "string" },
+        "billingAddressId": { "type": "string" },
+        "subtotal": { "type": "number" },
+        "discountAmount": { "type": "number" },
+        "totalAmount": { "type": "number" }
+      },
+      "required": ["userId", "orderNumber", "paymentMethod", "paymentStatus", "shippingAddressId", "billingAddressId", "subtotal", "totalAmount"]
+    },
+    "OrderItem": {
+      "title": "OrderItem",
+      "description": "Specific line item of a placed order",
+      "type": "object",
+      "properties": {
+        "orderId": { "type": "string" },
+        "productId": { "type": "string" },
+        "sku": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "quantity": { "type": "integer" },
+        "total": { "type": "number" }
+      },
+      "required": ["orderId", "productId", "sku", "name", "price", "quantity", "total"]
+    },
+    "ShoppingCart": {
+      "title": "ShoppingCart",
+      "description": "Shopping cart items for a customer",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "items": { "type": "array" }
+      },
+      "required": ["userId", "items"]
+    },
+    "Wishlist": {
+      "title": "Wishlist",
+      "description": "Wishlisted products",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "productIds": { "type": "array" }
+      },
+      "required": ["userId", "productIds"]
+    },
+    "Address": {
+      "title": "Address",
+      "description": "Shipping or billing address",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "addressType": { "type": "string", "enum": ["shipping", "billing"] },
+        "name": { "type": "string" },
+        "street": { "type": "string" },
+        "city": { "type": "string" },
+        "state": { "type": "string" },
+        "postalCode": { "type": "string" },
+        "country": { "type": "string" },
+        "phone": { "type": "string" },
+        "isDefault": { "type": "boolean" }
+      },
+      "required": ["userId", "addressType", "name", "street", "city", "state", "postalCode", "country", "phone"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Customer review of a product",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "rating": { "type": "integer" },
+        "comment": { "type": "string" },
+        "likes": { "type": "integer" },
+        "isApproved": { "type": "boolean" }
+      },
+      "required": ["productId", "userId", "userName", "rating", "comment", "isApproved"]
+    },
+    "Blog": {
+      "title": "Blog",
+      "description": "E-commerce blog post",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "slug": { "type": "string" },
+        "content": { "type": "string" },
+        "excerpt": { "type": "string" },
+        "coverImage": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "tags": { "type": "array" },
+        "readTime": { "type": "string" }
+      },
+      "required": ["title", "slug", "content", "excerpt", "coverImage", "authorId", "authorName", "readTime"]
+    },
+    "Banner": {
+      "title": "Banner",
+      "description": "Promotional billboard banners",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "linkUrl": { "type": "string" },
+        "sequence": { "type": "integer" },
+        "bannerType": { "type": "string", "enum": ["hero", "promo", "sidebar"] }
+      },
+      "required": ["title", "imageUrl", "linkUrl", "sequence", "bannerType"]
+    },
+    "Coupon": {
+      "title": "Coupon",
+      "description": "Promotional discount codes",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "discountType": { "type": "string", "enum": ["percentage", "fixed"] },
+        "discountValue": { "type": "number" },
+        "minOrderAmount": { "type": "number" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "usageLimit": { "type": "integer" },
+        "usedCount": { "type": "integer" }
+      },
+      "required": ["code", "discountType", "discountValue", "minOrderAmount", "startDate", "endDate", "usageLimit", "usedCount"]
+    },
+    "DealerApplication": {
+      "title": "DealerApplication",
+      "description": "Merchant dealer onboarding request",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "companyName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "location": { "type": "string" },
+        "message": { "type": "string" }
+      },
+      "required": ["name", "companyName", "email", "phone", "location", "message"]
+    },
+    "DistributorApplication": {
+      "title": "DistributorApplication",
+      "description": "Merchant distributor onboarding request",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "companyName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "location": { "type": "string" },
+        "message": { "type": "string" },
+        "distributionArea": { "type": "string" },
+        "warehouseCapacity": { "type": "string" }
+      },
+      "required": ["name", "companyName", "email", "phone", "location", "message", "distributionArea", "warehouseCapacity"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "System or order alerts for users",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "notificationType": { "type": "string", "enum": ["info", "success", "warning", "order"] },
+        "isRead": { "type": "boolean" }
+      },
+      "required": ["userId", "title", "body", "notificationType", "isRead"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Platform global configuration keys",
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" },
+        "value": { "type": "object" },
+        "category": { "type": "string", "enum": ["general", "security", "shipping", "payment"] }
+      },
+      "required": ["key", "value", "category"]
+    },
+    "HomepageContent": {
+      "title": "HomepageContent",
+      "description": "Configurable homepage widgets and grids",
+      "type": "object",
+      "properties": {
+        "sectionKey": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "object" }
+      },
+      "required": ["sectionKey", "title", "content"]
+    },
+    "ContactMessage": {
+      "title": "ContactMessage",
+      "description": "Customer support requests",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "resolved": { "type": "boolean" }
+      },
+      "required": ["name", "email", "subject", "message", "resolved"]
+    },
+    "Analytics": {
+      "title": "Analytics",
+      "description": "Platform behavioral event tracking logs",
+      "type": "object",
+      "properties": {
+        "event": { "type": "string" },
+        "sessionId": { "type": "string" },
+        "payload": { "type": "object" },
+        "device": { "type": "string" }
+      },
+      "required": ["event", "sessionId", "payload", "device"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "Customer Profiles"
+    },
+    "products/{productId}": {
+      "schema": "Product",
+      "description": "Products Table"
+    },
+    "categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Product Categories"
+    },
+    "inventory/{inventoryId}": {
+      "schema": "Inventory",
+      "description": "Real-time stock inventory levels"
+    },
+    "product_variants/{variantId}": {
+      "schema": "ProductVariant",
+      "description": "Product weight variations"
+    },
+    "orders/{orderId}": {
+      "schema": "Order",
+      "description": "Customer placed orders"
+    },
+    "order_items/{itemId}": {
+      "schema": "OrderItem",
+      "description": "Order line item details"
+    },
+    "shopping_carts/{cartId}": {
+      "schema": "ShoppingCart",
+      "description": "Shopping Cart elements per user"
+    },
+    "wishlists/{wishlistId}": {
+      "schema": "Wishlist",
+      "description": "Saved items wishlist"
+    },
+    "addresses/{addressId}": {
+      "schema": "Address",
+      "description": "Saved addresses"
+    },
+    "reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Product Reviews"
+    },
+    "blogs/{blogId}": {
+      "schema": "Blog",
+      "description": "Company Blog Posts"
+    },
+    "banners/{bannerId}": {
+      "schema": "Banner",
+      "description": "Billboard Promo Banners"
+    },
+    "coupons/{couponId}": {
+      "schema": "Coupon",
+      "description": "Discount coupon codes"
+    },
+    "dealer_applications/{appId}": {
+      "schema": "DealerApplication",
+      "description": "B2B Dealer Application Submissions"
+    },
+    "distributor_applications/{appId}": {
+      "schema": "DistributorApplication",
+      "description": "B2B Distributor Onboarding Requests"
+    },
+    "notifications/{notifId}": {
+      "schema": "Notification",
+      "description": "User specific transactional alerts"
+    },
+    "settings/{settingId}": {
+      "schema": "Settings",
+      "description": "Global Config Keys"
+    },
+    "homepage_contents/{sectionId}": {
+      "schema": "HomepageContent",
+      "description": "Dynamic homepage widgets configurations"
+    },
+    "contact_messages/{msgId}": {
+      "schema": "ContactMessage",
+      "description": "Customer contact/support messages"
+    },
+    "analytics/{logId}": {
+      "schema": "Analytics",
+      "description": "Usage analytics log streams"
+    }
+  }
+}

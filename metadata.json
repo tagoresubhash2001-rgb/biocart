@@ -1,0 +1,6 @@
+{
+  "name": "BioCart",
+  "description": "BioCart – Premium organic lifestyle brand promoting plastic-free living, chemical-free living, and sustainable home gardening.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
